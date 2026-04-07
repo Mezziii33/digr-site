@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DIGR — Find Your Next Record in Minutes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #06060A;
+    --surface:   #0C0C12;
+    --surface2:  #13131C;
+    --border:    rgba(255,255,255,0.07);
+    --accent:    #00E5C4;
+    --accent2:   #FF3D57;
+    --text:      #EDEDF0;
+    --muted:     #6B6B7A;
+    --dim:       rgba(237,237,240,0.55);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; overflow-x: hidden; max-width: 100vw; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+  /* NAV */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 900;
+    padding: 20px 0;
+    background: linear-gradient(to bottom, rgba(6,6,10,0.95), transparent);
+    backdrop-filter: blur(4px);
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto; padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    font-family: 'Space Mono', monospace; font-size: 18px; font-weight: 700;
+    letter-spacing: 0.12em; color: var(--accent); text-decoration: none;
+  }
+  .nav-cta {
+    font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--bg); background: var(--accent);
+    border: none; padding: 10px 20px; cursor: pointer; transition: opacity 0.2s; text-decoration: none;
+  }
+  .nav-cta:hover { opacity: 0.85; }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh; display: flex; flex-direction: column;
+    justify-content: center; align-items: center;
+    padding: 140px 0 80px; position: relative; overflow: hidden; text-align: center;
+  }
+  .hero .container { width: 100%; display: flex; flex-direction: column; align-items: center; }
+  .hero::after {
+    content: ''; position: absolute; inset: 0;
+    background-image: linear-gradient(rgba(0,229,196,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,196,0.04) 1px, transparent 1px);
+    background-size: 60px 60px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black, transparent);
+    pointer-events: none;
+  }
+  .hero-glow {
+    position: absolute; top: -100px; right: -200px; width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(0,229,196,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-eyebrow {
+    font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 0.25em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 28px;
+    opacity: 0; animation: fadeUp 0.7s 0.2s forwards; text-align: center;
+  }
+  .hero-eyebrow span {
+    display: inline-block; width: 28px; height: 1px;
+    background: var(--accent); vertical-align: middle; margin-right: 12px;
+  }
+  .hero h1 {
+    font-size: clamp(44px, 7vw, 88px); font-weight: 800; line-height: 1.0;
+    letter-spacing: -0.02em; max-width: 820px; margin: 0 auto 28px;
+    text-align: center; opacity: 0; animation: fadeUp 0.7s 0.35s forwards;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 20px); color: var(--dim); max-width: 560px;
+    line-height: 1.65; margin: 0 auto 48px; font-weight: 400; text-align: center;
+    opacity: 0; animation: fadeUp 0.7s 0.5s forwards;
+  }
+
+  /* WAVEFORM — CSS bars only, zero SVG */
+  .waveform {
+    display: flex; align-items: center; justify-content: center; gap: 3px;
+    margin: 0 auto 56px; max-width: 600px; height: 64px; overflow: hidden;
+    opacity: 0; animation: fadeUp 0.7s 0.6s forwards;
+  }
+  .waveform-bar {
+    width: 3px; background: var(--accent); border-radius: 2px; opacity: 0.5;
+    animation: wavePulse var(--dur, 1.4s) ease-in-out infinite alternate;
+    animation-delay: var(--delay, 0s);
+  }
+  @keyframes wavePulse {
+    from { height: var(--min, 6px); opacity: 0.25; }
+    to   { height: var(--max, 36px); opacity: 0.7; }
+  }
+
+  /* FORM */
+  .waitlist-form {
+    display: flex; gap: 0; max-width: 520px; width: 100%; margin: 0 auto;
+    opacity: 0; animation: fadeUp 0.7s 0.65s forwards;
+  }
+  .waitlist-form input[type="email"] {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-right: none; padding: 16px 20px; font-family: 'Space Mono', monospace;
+    font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s; min-width: 0;
+  }
+  .waitlist-form input[type="email"]::placeholder { color: var(--muted); }
+  .waitlist-form input[type="email"]:focus { border-color: var(--accent); }
+  .waitlist-form button {
+    background: var(--accent); color: var(--bg); border: none; padding: 16px 28px;
+    font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer;
+    transition: opacity 0.2s, transform 0.15s; white-space: nowrap; flex-shrink: 0;
+  }
+  .waitlist-form button:hover { opacity: 0.88; transform: translateX(1px); }
+  .waitlist-form button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .form-note {
+    font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted);
+    margin-top: 12px; text-align: center; opacity: 0; animation: fadeUp 0.7s 0.75s forwards;
+  }
+  .success-msg {
+    display: none; font-family: 'Space Mono', monospace; font-size: 13px;
+    color: var(--accent); padding: 16px 0; letter-spacing: 0.05em; text-align: center;
+  }
+  .success-msg.visible { display: block; }
+
+  /* PROBLEM */
+  .problem { padding: 120px 0; border-top: 1px solid var(--border); }
+  .section-label {
+    font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.3em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 56px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .section-label::before { content: ''; display: block; width: 20px; height: 1px; background: var(--muted); flex-shrink: 0; }
+  .problem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; width: 100%; overflow: hidden; }
+  .problem-statement { min-width: 0; padding-right: 80px; border-right: 1px solid var(--border); }
+  .problem-statement h2 { font-size: clamp(28px, 4vw, 46px); font-weight: 800; line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 24px; }
+  .problem-statement h2 em { font-style: normal; color: var(--accent2); }
+  .problem-statement p { color: var(--dim); font-size: 17px; line-height: 1.7; font-weight: 400; }
+  .pain-points { min-width: 0; padding-left: 80px; display: flex; flex-direction: column; }
+  .pain-item { padding: 28px 0; border-bottom: 1px solid var(--border); display: grid; grid-template-columns: 48px 1fr; gap: 20px; align-items: start; }
+  .pain-item:last-child { border-bottom: none; }
+  .pain-num { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--accent); letter-spacing: 0.1em; padding-top: 3px; }
+  .pain-item h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.01em; }
+  .pain-item p { font-size: 14px; color: var(--dim); line-height: 1.6; font-weight: 400; }
+
+  /* STAT BAR */
+  .stat-bar { display: flex; gap: 0; border: 1px solid var(--border); margin-top: 72px; }
+  .stat { flex: 1; padding: 28px 32px; border-right: 1px solid var(--border); text-align: center; }
+  .stat:last-child { border-right: none; }
+  .stat-value { font-size: 36px; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; margin-bottom: 4px; line-height: 1; }
+  .stat-label { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+
+  /* SOLUTION */
+  .solution { padding: 120px 0; background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); position: relative; overflow: hidden; }
+  .solution::before { content: ''; position: absolute; bottom: -200px; left: -200px; width: 600px; height: 600px; background: radial-gradient(circle, rgba(0,229,196,0.05) 0%, transparent 70%); pointer-events: none; }
+  .solution-header { text-align: center; margin-bottom: 80px; }
+  .solution-header h2 { font-size: clamp(30px, 4.5vw, 52px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 20px; }
+  .solution-header p { color: var(--dim); font-size: 17px; max-width: 540px; margin: 0 auto; font-weight: 400; line-height: 1.65; }
+  .dimensions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--border); }
+  .dim-card { padding: 36px 28px; border-right: 1px solid var(--border); transition: background 0.25s; position: relative; overflow: hidden; }
+  .dim-card:last-child { border-right: none; }
+  .dim-card:hover { background: var(--surface2); }
+  .dim-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }
+  .dim-card:hover::before { transform: scaleX(1); }
+  .dim-icon { font-size: 22px; margin-bottom: 16px; display: block; }
+  .dim-tag { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); margin-bottom: 12px; }
+  .dim-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.01em; }
+  .dim-card p { font-size: 13px; color: var(--dim); line-height: 1.65; font-weight: 400; }
+
+  /* HOW IT WORKS */
+  .how { padding: 120px 0; border-bottom: 1px solid var(--border); }
+  .how-header { margin-bottom: 72px; }
+  .how-header h2 { font-size: clamp(28px, 4vw, 46px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 48px; position: relative; }
+  .steps::before { content: ''; position: absolute; top: 24px; left: calc(16.66% + 16px); right: calc(16.66% + 16px); height: 1px; background: var(--accent); opacity: 0.25; }
+  .step { position: relative; }
+  .step-num { width: 48px; height: 48px; border: 1px solid var(--accent); display: flex; align-items: center; justify-content: center; font-family: 'Space Mono', monospace; font-size: 13px; color: var(--accent); margin-bottom: 24px; background: var(--bg); }
+  .step h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.01em; }
+  .step p { font-size: 14px; color: var(--dim); line-height: 1.7; font-weight: 400; }
+
+  /* PLATFORMS */
+  .platforms { padding: 100px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .platforms-header { margin-bottom: 56px; }
+  .platforms-header h2 { font-size: clamp(26px, 3.5vw, 42px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; margin-bottom: 16px; }
+  .platforms-header p { color: var(--dim); font-size: 16px; max-width: 500px; line-height: 1.65; font-weight: 400; }
+  .platform-logos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--border); }
+  .platform-item { padding: 40px 36px; border-right: 1px solid var(--border); transition: background 0.25s; position: relative; }
+  .platform-item:nth-child(3) { border-right: none; }
+  .platform-item:nth-child(4), .platform-item:nth-child(5), .platform-item:nth-child(6) { border-top: 1px solid var(--border); }
+  .platform-item:nth-child(6) { border-right: none; }
+  .platform-item:hover { background: var(--surface2); }
+  .platform-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: var(--accent); transform: scaleX(0); transform-origin: left; transition: transform 0.3s; }
+  .platform-item:hover::before { transform: scaleX(1); }
+  .platform-name { font-size: 22px; font-weight: 800; color: var(--text); letter-spacing: -0.01em; margin-bottom: 10px; }
+  .platform-desc { font-size: 13px; color: var(--muted); line-height: 1.6; font-weight: 400; }
+
+  /* CTA */
+  .cta-section { padding: 140px 0; text-align: center; position: relative; overflow: hidden; }
+  .cta-section::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 800px; height: 400px; background: radial-gradient(ellipse, rgba(0,229,196,0.06) 0%, transparent 70%); pointer-events: none; }
+  .cta-section h2 { font-size: clamp(32px, 5vw, 62px); font-weight: 800; letter-spacing: -0.02em; line-height: 1.05; max-width: 700px; margin: 0 auto 20px; }
+  .cta-section h2 em { font-style: normal; color: var(--accent); }
+  .cta-section .cta-body-text { color: var(--dim); font-size: 17px; margin-bottom: 48px; font-weight: 400; }
+  .cta-form { display: flex; gap: 0; max-width: 500px; width: 100%; margin: 0 auto 12px; justify-content: center; }
+  .cta-form input[type="email"] { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-right: none; padding: 18px 22px; font-family: 'Space Mono', monospace; font-size: 13px; color: var(--text); outline: none; transition: border-color 0.2s; min-width: 0; }
+  .cta-form input[type="email"]::placeholder { color: var(--muted); }
+  .cta-form input[type="email"]:focus { border-color: var(--accent); }
+  .cta-form button { background: var(--accent); color: var(--bg); border: none; padding: 18px 32px; font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; transition: opacity 0.2s; white-space: nowrap; flex-shrink: 0; }
+  .cta-form button:hover { opacity: 0.88; }
+  .cta-form button:disabled { opacity: 0.6; cursor: not-allowed; }
+  .cta-note { font-family: 'Syne', sans-serif; font-size: 13px; color: var(--muted); text-align: center; }
+
+  /* FOOTER */
+  footer { padding: 40px 0; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  footer .logo { font-size: 14px; }
+  footer p { font-family: 'Syne', sans-serif; font-size: 13px; color: var(--muted); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.65s, transform 0.65s; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    .problem-grid { display: block !important; }
+    .problem-statement { padding-right: 0; border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 56px; margin-bottom: 56px; }
+    .pain-points { padding-left: 0; }
+    .dimensions { grid-template-columns: repeat(2, 1fr); }
+    .dim-card:nth-child(2) { border-right: none; }
+    .dim-card:nth-child(3) { border-top: 1px solid var(--border); }
+    .steps { grid-template-columns: 1fr; gap: 40px; }
+    .steps::before { display: none; }
+    .stat-bar { flex-wrap: wrap; }
+    .stat { flex: 0 0 50%; }
+    .stat:nth-child(2) { border-right: none; }
+    .stat:nth-child(3), .stat:nth-child(4) { border-top: 1px solid var(--border); }
+    .waitlist-form { flex-direction: column; }
+    .waitlist-form input[type="email"] { border-right: 1px solid var(--border); border-bottom: none; }
+    .cta-form { flex-direction: column; max-width: 380px; }
+    .cta-form input[type="email"] { border-right: 1px solid var(--border); border-bottom: none; }
+    footer { flex-direction: column; gap: 16px; text-align: center; }
+  }
+
+  @media (max-width: 600px) {
+    html, body { overflow-x: hidden; width: 100%; max-width: 100vw; }
+    .container { padding: 0 16px; width: 100%; max-width: 100%; }
+    .nav-inner { padding: 0 16px; }
+    nav { padding: 12px 0; }
+    .nav-cta { padding: 8px 12px; font-size: 10px; }
+    .hero { padding: 110px 0 56px; min-height: auto; overflow: hidden; }
+    .hero-glow { display: none; }
+    .hero h1 { font-size: clamp(34px, 10vw, 56px); max-width: 100%; }
+    .hero-sub { font-size: 14px; max-width: 100%; }
+    .hero-eyebrow { font-size: 9px; letter-spacing: 0.12em; }
+    .waveform { display: none; }
+    .waitlist-form { flex-direction: column; max-width: 100%; width: 100%; }
+    .waitlist-form input[type="email"] { border-right: 1px solid var(--border); border-bottom: none; padding: 14px 16px; width: 100%; }
+    .waitlist-form button { padding: 14px 20px; font-size: 11px; width: 100%; }
+    .form-note { font-size: 10px; }
+    .problem { padding: 56px 0; overflow: hidden; }
+    .problem-grid { display: block !important; width: 100% !important; }
+    .problem-statement { display: block !important; width: 100% !important; padding-right: 0 !important; border-right: none !important; border-bottom: 1px solid var(--border); padding-bottom: 40px; margin-bottom: 40px; }
+    .problem-statement h2 { font-size: clamp(24px, 7vw, 36px); }
+    .pain-points { display: block !important; width: 100% !important; padding-left: 0 !important; }
+    .pain-item { grid-template-columns: 40px 1fr; gap: 12px; }
+    .solution { padding: 56px 0; }
+    .solution-header h2 { font-size: clamp(24px, 7vw, 38px); }
+    .dimensions { grid-template-columns: 1fr !important; }
+    .dim-card { border-right: none !important; border-bottom: 1px solid var(--border); padding: 24px 16px; }
+    .stat-bar { margin-top: 40px; flex-wrap: wrap; }
+    .stat { flex: 0 0 100%; border-right: none; border-bottom: 1px solid var(--border); }
+    .stat:last-child { border-bottom: none; }
+    .stat-value { font-size: 28px; }
+    .section-label { font-size: 9px; letter-spacing: 0.2em; }
+    .how { padding: 56px 0; }
+    .how-header h2 { font-size: clamp(24px, 7vw, 38px); }
+    .steps { gap: 32px; grid-template-columns: 1fr; }
+    .step-num { width: 40px; height: 40px; font-size: 12px; margin-bottom: 16px; }
+    .platforms { padding: 56px 0; }
+    .platforms-header h2 { font-size: clamp(22px, 6vw, 34px); }
+    .platform-logos { grid-template-columns: 1fr !important; }
+    .platform-item { border-right: none !important; border-top: none !important; border-bottom: 1px solid var(--border) !important; padding: 24px 16px; }
+    .platform-item:nth-child(3) { border-right: none !important; }
+    .platform-item:last-child { border-bottom: none !important; }
+    .platform-name { font-size: 18px; }
+    .cta-section { padding: 72px 0; }
+    .cta-section h2 { font-size: clamp(26px, 8vw, 44px); }
+    .cta-form { flex-direction: column; max-width: 100%; width: 100%; margin: 0 auto; }
+    .cta-form input[type="email"] { border-right: 1px solid var(--border); border-bottom: none; width: 100%; }
+    .cta-form button { width: 100%; }
+    .cta-note { font-size: 10px; }
+    footer { padding: 24px 0; flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="logo">DIGR</a>
+    <a href="#waitlist" class="nav-cta">Join Waitlist</a>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="container" style="position:relative; z-index:2;">
+    <p class="hero-eyebrow"><span></span>Built for Electronic Music Artists</p>
+    <h1>Stop digging.<br>Start <em>finding.</em></h1>
+    <p class="hero-sub">Upload a reference track. Get ranked matches by sound, feel, rhythm, and energy — across new releases and timeless tracks from any era. What takes days now takes minutes.</p>
+    <div class="waveform" id="waveform-static" aria-hidden="true"></div>
+    <form class="waitlist-form" id="hero-form" name="waitlist" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
+      <input type="hidden" name="form-name" value="waitlist">
+      <input type="hidden" name="bot-field">
+      <input type="email" name="email" placeholder="your@email.com" autocomplete="email" required>
+      <button type="submit">Get Early Access →</button>
+    </form>
+    <p class="success-msg" id="hero-success">✓ You're on the list. We'll be in touch.</p>
+    <p class="form-note">Free during beta. No spam. Unsubscribe anytime.</p>
+  </div>
+</section>
+
+<section class="problem">
+  <div class="container">
+    <p class="section-label reveal">The Problem</p>
+    <div class="problem-grid">
+      <div class="problem-statement reveal">
+        <h2>Music discovery is <em>completely broken</em> for working DJs.</h2>
+        <p>Thousands of tracks release every week across Beatport, Bandcamp, Juno Download, and beyond. No tool helps you find what actually sounds like what you're looking for — you're left digging manually through endless releases, hoping something clicks.</p>
+      </div>
+      <div class="pain-points">
+        <div class="pain-item reveal">
+          <span class="pain-num">01</span>
+          <div>
+            <h4>Days — sometimes weeks</h4>
+            <p>A single set can require 2–5 days of research, sometimes stretching into one or two weeks. And from 1,000 tracks reviewed, you might walk away with 50 or 100 worth keeping. The search-to-find ratio is brutal.</p>
+          </div>
+        </div>
+        <div class="pain-item reveal">
+          <span class="pain-num">02</span>
+          <div>
+            <h4>Key and BPM only goes so far</h4>
+            <p>Existing tools let you filter by key or BPM — but that's where it stops. There's no way to search by groove, texture, energy, or sonic feel. The filters scratch the surface and leave the hard work to you.</p>
+          </div>
+        </div>
+        <div class="pain-item reveal">
+          <span class="pain-num">03</span>
+          <div>
+            <h4>Previewing blindly is exhausting</h4>
+            <p>Every promising track means jumping from one platform to another just to hear 90 seconds. Hours gone — hours that could've been spent sharpening your mixing skills or actually building the set.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="stat-bar reveal">
+      <div class="stat"><div class="stat-value">2–5</div><div class="stat-label">Days per set prep</div></div>
+      <div class="stat"><div class="stat-value">1000s</div><div class="stat-label">New tracks weekly</div></div>
+      <div class="stat"><div class="stat-value">0</div><div class="stat-label">Tools built for this</div></div>
+      <div class="stat"><div class="stat-value">Minutes</div><div class="stat-label">With DIGR</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="solution">
+  <div class="container">
+    <div class="solution-header reveal">
+      <p class="section-label" style="justify-content:center;">The Solution</p>
+      <h2>One upload.<br>Four dimensions of similarity.</h2>
+      <p>Upload any reference track. DIGR analyses the audio and matches it against the full catalog — new releases or timeless tracks from past years. Ranked by what matters to you.</p>
+    </div>
+    <div class="dimensions">
+      <div class="dim-card reveal">
+        <span class="dim-icon">♩</span>
+        <p class="dim-tag">Dimension 01</p>
+        <h3>Uncharted Connections</h3>
+        <p>The best sets aren't built from obvious choices. DIGR surfaces music you wouldn't have thought to search for. What you do with them is entirely your art.</p>
+      </div>
+      <div class="dim-card reveal">
+        <span class="dim-icon">◈</span>
+        <p class="dim-tag">Dimension 02</p>
+        <h3>Rhythm &amp; Groove</h3>
+        <p>Music is abundant. The right match is not. DIGR finds what numbers can't measure — tracks that share the same pulse as yours, so your transitions feel inevitable, not forced.</p>
+      </div>
+      <div class="dim-card reveal">
+        <span class="dim-icon">〜</span>
+        <p class="dim-tag">Dimension 03</p>
+        <h3>Feel &amp; Energy</h3>
+        <p>You know the feeling before you can name it. That pull in your chest when a track is right. DIGR analyses what your instincts already know and finds music that lives in the same emotional space.</p>
+      </div>
+      <div class="dim-card reveal">
+        <span class="dim-icon">∿</span>
+        <p class="dim-tag">Dimension 04</p>
+        <h3>Sound &amp; Timbre</h3>
+        <p>Two tracks can share a genre and still sound like different universes. DIGR goes into the DNA of your sound — the atmosphere, the texture, and the sonic identity your music carries.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="how">
+  <div class="container">
+    <p class="section-label reveal">How It Works</p>
+    <div class="how-header reveal">
+      <h2>Three steps.<br>That's the whole workflow.</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <h3>Upload your reference</h3>
+        <p>Drop any track you love — something you produced, something from your collection, anything. DIGR analyses its audio fingerprint across all four dimensions. You choose which ones matter most, or let all four run together.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">02</div>
+        <h3>Get ranked matches</h3>
+        <p>Instantly see new weekly releases ranked by similarity. Filter by dimension — want only rhythm matches? Only feel? You control the weight.</p>
+      </div>
+      <div class="step reveal">
+        <div class="step-num">03</div>
+        <h3>Preview here. Buy in one click.</h3>
+        <p>Listen to every result directly inside DIGR via embedded preview. When you find the one — one click takes you straight to the track page on Beatport, Juno, Bandcamp, or wherever you buy.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="platforms">
+  <div class="container">
+    <p class="section-label reveal">Supported Platforms</p>
+    <div class="platforms-header reveal">
+      <h2>Listen inside DIGR.<br>Buy direct on the store you already use.</h2>
+      <p>Every match links directly to the track page on the platform of your choice. One click — you're there. No new accounts on the stores you already use.</p>
+      <p style="margin-top:0.75rem;">Save tracks to your DIGR crate. Come back whenever you're ready to buy — your finds are waiting.</p>
+    </div>
+    <div class="platform-logos reveal">
+      <div class="platform-item"><div class="platform-name">Beatport</div><div class="platform-desc">The world's leading electronic music download store</div></div>
+      <div class="platform-item"><div class="platform-name">Bandcamp</div><div class="platform-desc">Independent music directly from artists and labels</div></div>
+      <div class="platform-item"><div class="platform-name">Juno Download</div><div class="platform-desc">Electronic music specialists since 1996</div></div>
+      <div class="platform-item"><div class="platform-name">Traxsource</div><div class="platform-desc">Home of house, techno, and electronic dance music</div></div>
+      <div class="platform-item"><div class="platform-name">Boomkat</div><div class="platform-desc">Independent music specialist for the underground</div></div>
+      <div class="platform-item"><div class="platform-name">Bleep</div><div class="platform-desc">Warp Records' store for independent and innovative music</div></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section" id="waitlist">
+  <div class="container" style="position:relative; z-index:2;">
+    <p class="section-label reveal" style="justify-content:center;">Early Access</p>
+    <h2 class="reveal">Be first in.<br><em>Shape what gets built.</em></h2>
+    <p class="cta-body-text reveal">Early access members get the platform free during beta — and direct input on features.</p>
+    <form class="cta-form reveal" id="cta-form" name="waitlist-cta" method="POST" data-netlify="true" data-netlify-honeypot="bot-field">
+      <input type="hidden" name="form-name" value="waitlist-cta">
+      <input type="hidden" name="bot-field">
+      <input type="email" name="email" placeholder="your@email.com" autocomplete="email" required>
+      <button type="submit">Request Access →</button>
+    </form>
+    <p class="success-msg" id="cta-success">✓ You're on the list. We'll be in touch.</p>
+    <p class="cta-note reveal">Free during beta &nbsp;·&nbsp; No credit card &nbsp;·&nbsp; For electronic music artists</p>
+  </div>
+</section>
+
+<div class="container">
+  <footer>
+    <a href="#" class="logo">DIGR</a>
+    <p>Built for electronic music artists. Powered by audio AI. &copy; 2026</p>
+  </footer>
+</div>
+
+<!-- Netlify hidden form detection -->
+<form name="waitlist" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="email" name="email">
+</form>
+<form name="waitlist-cta" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="email" name="email">
+</form>
+
+<script>
+  /* WAVEFORM BARS */
+  (function() {
+    var c = document.getElementById('waveform-static');
+    if (!c) return;
+    var h = [8,12,18,24,32,40,48,52,56,52,44,36,28,20,14,10,8,12,20,30,44,56,60,56,44,30,20,12,8,10,16,26,38,50,56,50,38,26,16,10,8,14,22,32,44];
+    h.forEach(function(v, i) {
+      var b = document.createElement('div');
+      b.className = 'waveform-bar';
+      b.style.setProperty('--min', Math.max(4, Math.round(v * 0.3)) + 'px');
+      b.style.setProperty('--max', v + 'px');
+      b.style.setProperty('--dur', (1.2 + Math.random() * 0.8).toFixed(2) + 's');
+      b.style.setProperty('--delay', (i * 0.04).toFixed(2) + 's');
+      b.style.height = v + 'px';
+      c.appendChild(b);
+    });
+  })();
+
+  /* SCROLL REVEAL */
+  var ro = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        var idx = Array.from(e.target.parentElement.children).indexOf(e.target);
+        e.target.style.transitionDelay = (idx * 0.08) + 's';
+        e.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(function(el) { ro.observe(el); });
+
+  /* FORM HANDLER — via Netlify Function to Beehiiv API */
+  function attachForm(formId, successId) {
+    var form = document.getElementById(formId);
+    if (!form) return;
+    form.addEventListener('submit', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var success = document.getElementById(successId);
+      var btn = form.querySelector('button[type="submit"]');
+      var emailInput = form.querySelector('input[type="email"]');
+      var email = emailInput ? emailInput.value.trim() : '';
+      if (!email) return;
+      btn.textContent = 'Submitting…';
+      btn.disabled = true;
+      fetch('/.netlify/functions/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      })
+      .then(function() {
+        form.style.display = 'none';
+        if (success) success.classList.add('visible');
+      })
+      .catch(function() {
+        form.style.display = 'none';
+        if (success) success.classList.add('visible');
+      });
+      return false;
+    });
+  }
+  attachForm('hero-form', 'hero-success');
+  attachForm('cta-form', 'cta-success');
+
+  /* SMOOTH SCROLL */
+  document.querySelectorAll('a[href^="#"]').forEach(function(a) {
+    a.addEventListener('click', function(e) {
+      var t = document.querySelector(a.getAttribute('href'));
+      if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  });
+</script>
+</body>
+</html>
